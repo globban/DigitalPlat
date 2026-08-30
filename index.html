@@ -1,1 +1,718 @@
-WIP
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
+  <title>_</title>
+
+  <script>
+    (function() {
+      const ua = navigator.userAgent || navigator.vendor || window.opera;
+      const isMobile = /android|iphone|ipad|ipod|windows phone|blackberry|mobile/i.test(ua);
+
+      if (isMobile) {
+        window.location.replace("/mobile.html");
+      }
+    })();
+  </script>
+
+  <style>
+    :root {
+      --text-color: #b5ffbe;
+      --selected-bg: var(--text-color);
+      --selected-text: #000000;
+    }
+
+    body {
+      background: #000000;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    #banner-stack {
+      position: fixed;
+      top: 16px;
+      left: 16px;
+      z-index: 1000;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 10px;
+    }
+
+    #daily-banner {
+      max-width: min(32vw, 660px);
+      width: auto;
+      height: auto;
+      opacity: 0.92;
+      pointer-events: none;
+      user-select: none;
+    }
+
+    .shell-panel,
+    .settings-panel {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 4px;
+      color: var(--text-color);
+      font-family: "SFMono-Regular", "Consolas", "Liberation Mono", monospace;
+      font-size: 14px;
+      line-height: 1.7;
+      background: transparent;
+      padding: 0;
+      margin: 0;
+    }
+
+    .prompt-row {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      color: var(--text-color);
+      font: inherit;
+      background: transparent;
+      border: 0;
+      padding: 0;
+      margin: 0;
+      line-height: 1;
+    }
+
+    .prompt-label,
+    .prompt-symbol {
+      color: var(--text-color);
+      display: inline-flex;
+      align-items: center;
+    }
+
+    #shell-input,
+    .settings-input,
+    .settings-select {
+      appearance: none;
+      -webkit-appearance: none;
+      border: 0;
+      outline: none;
+      background: transparent;
+      color: var(--text-color);
+      font: inherit;
+      width: min(300px, 48vw);
+      min-width: 150px;
+      padding: 0;
+      margin: 0;
+      line-height: 1;
+      vertical-align: middle;
+      caret-color: var(--text-color);
+    }
+
+    #shell-input::selection,
+    .settings-input::selection {
+      background: rgba(255, 255, 255, 0.8);
+      color: #000000;
+    }
+
+    .shell-options,
+    .settings-options {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 2px;
+      margin-top: 2px;
+    }
+
+    .shell-option,
+    .settings-option {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      background: transparent;
+      border: 0;
+      padding: 0;
+      margin: 0;
+      font: inherit;
+      color: var(--text-color);
+      cursor: pointer;
+      text-align: left;
+      opacity: 0.9;
+    }
+
+    .shell-option.selected, .shell-option:hover {
+      background: var(--selected-bg);
+      color: var(--selected-text);
+      padding: 0 4px;
+      opacity: 1;
+    }
+
+    .selector {
+      width: 10px;
+      display: inline-block;
+      opacity: 0;
+      color: inherit;
+    }
+
+    .shell-panel.nav-used .selector,
+    .shell-option.selected .selector {
+      opacity: 1;
+    }
+
+    .shell-option .command,
+    .settings-option .command {
+      color: inherit;
+      font-weight: 700;
+    }
+
+    .shell-option .meta,
+    .settings-option .meta {
+      color: rgba(181, 255, 190, 0.8);
+    }
+
+    .shell-option.selected .meta,
+    .settings-option.selected .meta {
+      color: rgba(0, 0, 0, 0.75);
+    }
+
+    .settings-panel {
+      display: none;
+      min-width: min(440px, 72vw);
+    }
+
+    .settings-panel.visible {
+      display: flex;
+    }
+
+    .settings-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-height: 24px;
+      color: var(--text-color);
+    }
+
+    .settings-row label {
+      color: var(--text-color);
+      min-width: 110px;
+    }
+
+    .settings-inline {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .settings-toggle {
+      appearance: none;
+      -webkit-appearance: none;
+      width: 14px;
+      height: 14px;
+      border: 1px solid var(--text-color);
+      background: transparent;
+      margin: 0;
+      cursor: pointer;
+      position: relative;
+    }
+
+    .settings-toggle:checked::after {
+      content: "";
+      position: absolute;
+      inset: 2px;
+      background: var(--text-color);
+    }
+
+    .settings-select {
+      width: auto;
+      min-width: 70px;
+      border: 0;
+      background: transparent;
+      color: var(--text-color);
+      cursor: pointer;
+    }
+
+    #splash {
+      position: fixed;
+      inset: 0;
+      background: #000000;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      transition: opacity 0.6s ease;
+    }
+
+    .logo-mask {
+      position: relative;
+      display: inline-block;
+      width: 500px;
+      height: 500px;
+      -webkit-mask-image: var(--logo);
+      mask-image: var(--logo);
+      -webkit-mask-repeat: no-repeat;
+      mask-repeat: no-repeat;
+      -webkit-mask-size: contain;
+      mask-size: contain;
+      -webkit-mask-position: center;
+      mask-position: center;
+    }
+
+    .logo {
+      width: 100%;
+      height: 100%;
+      filter: brightness(0);
+    }
+
+    .logo-mask::after {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(
+        100deg,
+        transparent 30%,
+        rgba(255, 255, 255, 0.7) 50%,
+        transparent 80%
+      );
+      transform: translateX(-150%) skewX(-20deg);
+      animation: shimmer 3s ease-out forwards;
+    }
+
+    @keyframes shimmer {
+      to {
+        transform: translateX(150%) skewX(-20deg);
+      }
+    }
+  </style>
+</head>
+<body>
+  
+  <div id="banner-stack">
+    <img id="daily-banner" alt="Daily ASCII art banner" />
+
+    <div class="shell-panel" aria-label="runk shell menu">
+      <div class="prompt-row">
+        <span class="prompt-label">root@runk</span>
+        <span class="prompt-symbol">:~$</span>
+        <input id="shell-input" type="text" aria-label="Command input" spellcheck="false" autocomplete="off" />
+      </div>
+
+      <div class="shell-options">
+        <button class="shell-option" data-command="./shell" data-url="https://linuxontab.com/shell/" aria-selected="false">
+          <span class="selector">&gt;</span>
+          <span class="command">./shell</span>
+          <span class="meta">[launch]</span>
+        </button>
+
+        <button class="shell-option" data-command="./overclock" data-url="https://next.linuxontab.com/" aria-selected="false">
+          <span class="selector">&gt;</span>
+          <span class="command">./overclock</span>
+          <span class="meta">[unstable]</span>
+        </button>
+
+        <button class="shell-option" data-command="./settings" data-url="settings" aria-selected="false">
+          <span class="selector">&gt;</span>
+          <span class="command">./settings</span>
+          <span class="meta">[config]</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="settings-panel" id="settings-panel" aria-label="Settings menu">
+      <div class="editor-row"><span class="prompt-label">root@runk</span><span class="prompt-symbol">:~$</span><span class="command">settings</span></div>
+
+      <div class="settings-row">
+        <label for="splash-toggle">splash</label>
+        <input id="splash-toggle" class="settings-toggle" type="checkbox" />
+      </div>
+
+      <div class="settings-row">
+        <label for="banner-select">banner</label>
+        <select id="banner-select" class="settings-select" aria-label="Select banner number">
+          <option value="0">1</option>
+        </select>
+      </div>
+
+      <div class="settings-row">
+        <label for="text-color">text color</label>
+        <input id="text-color" class="settings-input" type="color" value="#b5ffbe" />
+      </div>
+
+      <div class="settings-row">
+        <button class="settings-option" data-close="true" type="button">
+          <span class="selector">&gt;</span>
+          <span class="command">save & exit</span>
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="splash" onclick="hide()">
+    <div class="logo-mask" style="--logo: url('logo.svg')">
+      <img src="logo.svg" class="logo" alt="Logo">
+    </div>
+  </div>
+
+  <script>
+    (function() {
+      const bannerFiles = [
+        "banners/ascii-art (1).png",
+        "banners/ascii-art (2).png",
+        "banners/ascii-art (3).png",
+        "banners/ascii-art (4).png",
+        "banners/ascii-art (5).png",
+        "banners/ascii-art (6).png",
+        "banners/ascii-art (7).png",
+        "banners/ascii-art (8).png",
+        "banners/ascii-art (9).png",
+        "banners/ascii-art (10).png",
+        "banners/ascii-art (11).png",
+        "banners/ascii-art (12).png",
+        "banners/ascii-art (13).png",
+        "banners/ascii-art (14).png",
+        "banners/ascii-art (15).png",
+        "banners/ascii-art (16).png",
+        "banners/ascii-art (17).png",
+        "banners/ascii-art (18).png",
+        "banners/ascii-art (19).png",
+        "banners/ascii-art (20).png",
+        "banners/ascii-art (21).png",
+        "banners/ascii-art (22).png",
+        "banners/ascii-art (23).png",
+        "banners/ascii-art (24).png",
+        "banners/ascii-art (25).png"
+      ];
+
+      function getDailyBanner() {
+        const today = new Date();
+        const seed = Date.UTC(today.getFullYear(), today.getMonth(), today.getDate());
+        const index = Math.abs(Math.floor(seed / 86400000)) % bannerFiles.length;
+        return bannerFiles[index];
+      }
+
+      const banner = document.getElementById("daily-banner");
+      if (banner) {
+        banner.src = getDailyBanner();
+      }
+    })();
+
+    window.addEventListener("load", () => {
+      setTimeout(() => {
+        const splash = document.getElementById("splash");
+        if (splash) {
+          splash.style.opacity = "0";
+          setTimeout(() => splash.remove(), 600);
+        }
+      }, 1000);
+    });
+
+    function hide() {
+      const splash = document.getElementById("splash");
+      if (splash) {
+        splash.style.display = "none";
+      }
+    }
+
+    const shellInput = document.getElementById("shell-input");
+    const shellPanel = document.querySelector(".shell-panel");
+    const settingsPanel = document.getElementById("settings-panel");
+    const splashToggle = document.getElementById("splash-toggle");
+    const bannerSelect = document.getElementById("banner-select");
+    const textColorInput = document.getElementById("text-color");
+    const options = Array.from(document.querySelectorAll(".shell-option"));
+    let selectedIndex = -1;
+
+    const bannerFiles = [
+      "banners/ascii-art (1).png",
+      "banners/ascii-art (2).png",
+      "banners/ascii-art (3).png",
+      "banners/ascii-art (4).png",
+      "banners/ascii-art (5).png",
+      "banners/ascii-art (6).png",
+      "banners/ascii-art (7).png",
+      "banners/ascii-art (8).png",
+      "banners/ascii-art (9).png",
+      "banners/ascii-art (10).png",
+      "banners/ascii-art (11).png",
+      "banners/ascii-art (12).png",
+      "banners/ascii-art (13).png",
+      "banners/ascii-art (14).png",
+      "banners/ascii-art (15).png",
+      "banners/ascii-art (16).png",
+      "banners/ascii-art (17).png",
+      "banners/ascii-art (18).png",
+      "banners/ascii-art (19).png",
+      "banners/ascii-art (20).png",
+      "banners/ascii-art (21).png",
+      "banners/ascii-art (22).png",
+      "banners/ascii-art (23).png",
+      "banners/ascii-art (24).png",
+      "banners/ascii-art (25).png"
+    ];
+
+    function getDefaultSettings() {
+      return {
+        splashEnabled: true,
+        bannerIndex: 0,
+        textColor: "#b5ffbe"
+      };
+    }
+
+    function loadSettings() {
+      try {
+        const raw = localStorage.getItem("runk-shell-settings");
+        return raw ? { ...getDefaultSettings(), ...JSON.parse(raw) } : getDefaultSettings();
+      } catch (error) {
+        return getDefaultSettings();
+      }
+    }
+
+    function saveSettings() {
+      const settings = {
+        splashEnabled: splashToggle ? splashToggle.checked : true,
+        bannerIndex: Number(bannerSelect ? bannerSelect.value : 0),
+        textColor: textColorInput ? textColorInput.value : "#b5ffbe"
+      };
+      localStorage.setItem("runk-shell-settings", JSON.stringify(settings));
+    }
+
+    function applySettings() {
+      const settings = loadSettings();
+
+      if (splashToggle) {
+        splashToggle.checked = Boolean(settings.splashEnabled);
+      }
+
+      if (bannerSelect) {
+        bannerSelect.innerHTML = bannerFiles
+          .map((_, index) => `<option value="${index}">${index + 1}</option>`)
+          .join("");
+        bannerSelect.value = String(settings.bannerIndex);
+      }
+
+      if (textColorInput) {
+        textColorInput.value = settings.textColor || "#b5ffbe";
+      }
+
+      document.documentElement.style.setProperty("--text-color", settings.textColor || "#b5ffbe");
+      document.documentElement.style.setProperty("--selected-bg", settings.textColor || "#b5ffbe");
+      document.documentElement.style.setProperty("--selected-text", "#000000");
+
+      updateBannerDisplay(Number(settings.bannerIndex || 0));
+
+      const splash = document.getElementById("splash");
+      if (splash) {
+        if (settings.splashEnabled === false) {
+          splash.style.display = "none";
+        } else {
+          splash.style.display = "flex";
+        }
+      }
+    }
+
+    function updateBannerDisplay(index) {
+      const safeIndex = Math.max(0, Math.min(index, bannerFiles.length - 1));
+      const banner = document.getElementById("daily-banner");
+      if (banner) {
+        banner.src = bannerFiles[safeIndex];
+      }
+    }
+
+    function showSettingsPanel() {
+      if (settingsPanel) {
+        settingsPanel.classList.add("visible");
+      }
+      if (shellPanel) {
+        shellPanel.style.display = "none";
+      }
+      if (shellInput) {
+        shellInput.blur();
+      }
+    }
+
+    function hideSettingsPanel() {
+      if (settingsPanel) {
+        settingsPanel.classList.remove("visible");
+      }
+      if (shellPanel) {
+        shellPanel.style.display = "flex";
+      }
+      if (shellInput) {
+        shellInput.focus();
+      }
+    }
+
+    function updateSelection(nextIndex) {
+      selectedIndex = (nextIndex + options.length) % options.length;
+      options.forEach((button, index) => {
+        const isSelected = index === selectedIndex;
+        button.classList.toggle("selected", isSelected);
+        button.setAttribute("aria-selected", String(isSelected));
+      });
+
+      if (shellPanel) {
+        shellPanel.classList.add("nav-used");
+      }
+
+      const selectedCommand = options[selectedIndex].dataset.command;
+      if (shellInput && shellInput.value.trim() === "") {
+        shellInput.value = selectedCommand;
+      }
+    }
+
+    function openSelected() {
+      const selected = options[selectedIndex];
+      if (!selected) return;
+
+      const url = selected.getAttribute("data-url");
+      if (url === "settings") {
+        showSettingsPanel();
+        return;
+      }
+
+      if (url) {
+        window.open(url, "_current", "noopener,noreferrer");
+      }
+    }
+
+    function normalizeCommand(value) {
+      return String(value || "")
+        .trim()
+        .replace(/^\.?\/+/, "")
+        .replace(/^\.+/, "")
+        .toLowerCase();
+    }
+
+    function applyAutocomplete() {
+      const typed = normalizeCommand(shellInput.value);
+      const match = options.find((button) =>
+        normalizeCommand(button.dataset.command).startsWith(typed)
+      );
+
+      if (match) {
+        const matchIndex = options.indexOf(match);
+        updateSelection(matchIndex);
+        shellInput.value = match.dataset.command;
+      }
+    }
+
+    options.forEach((button, index) => {
+      button.addEventListener("click", () => {
+        updateSelection(index);
+        shellInput.value = button.dataset.command;
+        openSelected();
+      });
+    });
+
+    shellInput.addEventListener("focus", () => {
+      if (selectedIndex === -1 && shellInput.value.trim() === "") {
+        shellInput.value = "";
+      }
+    });
+
+    shellInput.addEventListener("input", () => {
+      const typed = normalizeCommand(shellInput.value);
+      if (!typed) {
+        shellInput.value = "";
+        return;
+      }
+
+      const matchIndex = options.findIndex((button) =>
+        normalizeCommand(button.dataset.command).startsWith(typed)
+      );
+
+      if (matchIndex >= 0) {
+        updateSelection(matchIndex);
+      }
+    });
+
+    shellInput.addEventListener("keydown", (event) => {
+      if (event.key === "Tab") {
+        event.preventDefault();
+        applyAutocomplete();
+      }
+    });
+
+    if (splashToggle) {
+      splashToggle.addEventListener("change", () => {
+        saveSettings();
+        const splash = document.getElementById("splash");
+        if (splash) {
+          splash.style.display = splashToggle.checked ? "flex" : "none";
+        }
+      });
+    }
+
+    if (bannerSelect) {
+      bannerSelect.addEventListener("change", () => {
+        const index = Number(bannerSelect.value);
+        updateBannerDisplay(index);
+        saveSettings();
+      });
+    }
+
+    if (textColorInput) {
+      textColorInput.addEventListener("input", () => {
+        const color = textColorInput.value;
+        document.documentElement.style.setProperty("--text-color", color);
+        document.documentElement.style.setProperty("--selected-bg", color);
+        saveSettings();
+      });
+    }
+
+    document.addEventListener("keydown", (event) => {
+      if (settingsPanel && settingsPanel.classList.contains("visible")) {
+        if (event.key === "Escape") {
+          event.preventDefault();
+          hideSettingsPanel();
+          saveSettings();
+        }
+        return;
+      }
+
+      if (event.key === "ArrowDown" || event.key === "j") {
+        event.preventDefault();
+        updateSelection(selectedIndex + 1);
+        shellInput.value = options[selectedIndex].dataset.command;
+      }
+
+      if (event.key === "ArrowUp" || event.key === "k") {
+        event.preventDefault();
+        updateSelection(selectedIndex - 1);
+        shellInput.value = options[selectedIndex].dataset.command;
+      }
+
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        openSelected();
+      }
+    });
+
+    const closeSettingsButton = document.querySelector("[data-close='true']");
+    if (closeSettingsButton) {
+      closeSettingsButton.addEventListener("click", () => {
+        saveSettings();
+        hideSettingsPanel();
+      });
+    }
+
+    applySettings();
+
+    window.addEventListener("load", () => {
+      const settings = loadSettings();
+      const splash = document.getElementById("splash");
+
+      if (settings.splashEnabled === false && splash) {
+        splash.style.display = "none";
+      } else {
+        setTimeout(() => {
+          if (splash) {
+            splash.style.opacity = "0";
+            setTimeout(() => splash.remove(), 600);
+          }
+        }, 1000);
+      }
+
+      shellInput.focus();
+      shellInput.setSelectionRange(shellInput.value.length, shellInput.value.length);
+    });
+  </script>
+  
+</body>
+</html>
