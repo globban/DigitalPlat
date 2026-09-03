@@ -42,12 +42,31 @@
     }
 
     #daily-banner {
+      display: inline-block;
+      position: relative;
+      line-height: 0;
       max-width: min(32vw, 660px);
-      width: auto;
-      height: auto;
+      background-color: var(--text-color);
+      -webkit-mask-image: var(--banner-mask);
+      mask-image: var(--banner-mask);
+      -webkit-mask-mode: luminance;
+      mask-mode: luminance;
+      -webkit-mask-repeat: no-repeat;
+      mask-repeat: no-repeat;
+      -webkit-mask-position: center;
+      mask-position: center;
+      -webkit-mask-size: 100% 100%;
+      mask-size: 100% 100%;
       opacity: 0.92;
       pointer-events: none;
       user-select: none;
+    }
+
+    #daily-banner-image {
+      display: block;
+      max-width: 100%;
+      height: auto;
+      opacity: 0;
     }
 
     .shell-panel,
@@ -164,7 +183,8 @@
 
     .shell-option .meta,
     .settings-option .meta {
-      color: rgba(181, 255, 190, 0.8);
+      color: rgba(--text-color);
+      opacity: 0.7;
     }
 
     .shell-option.selected .meta,
@@ -284,7 +304,9 @@
 <body>
   
   <div id="banner-stack">
-    <img id="daily-banner" alt="Daily ASCII art banner" />
+    <div id="daily-banner" role="img" aria-label="Daily ASCII art banner">
+      <img id="daily-banner-image" alt="" />
+    </div>
 
     <div class="shell-panel" aria-label="runk shell menu">
       <div class="prompt-row">
@@ -310,6 +332,16 @@
           <span class="selector">&gt;</span>
           <span class="command">./settings</span>
           <span class="meta">[config]</span>
+        </button>
+        <button class="shell-option" data-command="./skydreams" data-url="/skydreams.html" aria-selected="false">
+          <span class="selector">&gt;</span>
+          <span class="command">./game</span>
+          <span class="meta">[skydreams]</span>
+        </button>
+        <button class="shell-option" data-command="" data-url="liquid/index.html" aria-selected="false">
+          <span class="selector">&gt;</span>
+          <span class="command">./liquid</span>
+          <span class="meta">[demo]</span>
         </button>
       </div>
     </div>
@@ -387,8 +419,11 @@
       }
 
       const banner = document.getElementById("daily-banner");
-      if (banner) {
-        banner.src = getDailyBanner();
+      const bannerImage = document.getElementById("daily-banner-image");
+      if (banner && bannerImage) {
+        const bannerSource = getDailyBanner();
+        bannerImage.src = bannerSource;
+        banner.style.setProperty("--banner-mask", `url("${bannerSource}")`);
       }
     })();
 
@@ -509,8 +544,11 @@
     function updateBannerDisplay(index) {
       const safeIndex = Math.max(0, Math.min(index, bannerFiles.length - 1));
       const banner = document.getElementById("daily-banner");
-      if (banner) {
-        banner.src = bannerFiles[safeIndex];
+      const bannerImage = document.getElementById("daily-banner-image");
+      if (banner && bannerImage) {
+        const bannerSource = bannerFiles[safeIndex];
+        bannerImage.src = bannerSource;
+        banner.style.setProperty("--banner-mask", `url("${bannerSource}")`);
       }
     }
 

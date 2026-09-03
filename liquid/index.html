@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="es">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Runk</title>
+	<link rel="stylesheet" href="style.css">
+</head>
+<body class="ui-hidden">
+<canvas class="webgl"></canvas>
+
+<div class="ui" id="ui">
+	<div class="lockup">
+		<span class="mark">Runk<span class="idx">/ R.09</span></span>
+		<div class="meta">
+			<span>Real-time WebGL · GLSL</span>
+			<span>Screen-space fluid</span>
+		</div>
+	</div>
+
+	<div class="ui-row bottom">
+		<p class="desc">
+			Tipografía tridimensional derritiéndose sobre un campo de fluido
+			simulado cuadro a cuadro.
+		</p>
+		<span class="credit">Est. 2026 — 01 / 01</span>
+	</div>
+</div>
+
+<div id="panel">
+	<h3>Texto 3D</h3>
+	<label>Tamaño <span class="val" id="vSize"></span></label>
+	<input type="range" id="size" min="100" max="280" step="2" value="280" />
+	<label>Disolver en el líquido <span class="val" id="vDissolve"></span></label>
+	<input type="range" id="dissolve" min="0" max="1" step="0.01" value="0" />
+
+	<h3>Rotación 3D / profundidad</h3>
+	<label>Inclinar atrás (X) <span class="val" id="vRotX"></span></label>
+	<input type="range" id="rotX" min="-1.5" max="0.6" step="0.01" value="-0.76" />
+	<label>Girar (Y) <span class="val" id="vRotY"></span></label>
+	<input type="range" id="rotY" min="-1.2" max="1.2" step="0.01" value="0.09" />
+	<label>Diagonal (Z) <span class="val" id="vRotZ"></span></label>
+	<input type="range" id="rotZ" min="-1.2" max="1.2" step="0.01" value="0.61" />
+	<label>Profundidad (lente) <span class="val" id="vFov"></span></label>
+	<input type="range" id="fov" min="22" max="80" step="1" value="22" />
+
+	<button id="reset">reiniciar goteo</button>
+</div>
+
+<button id="ui-toggle" type="button" aria-controls="ui panel" aria-pressed="false">show UI</button>
+
+<script type="importmap">
+	{
+		"imports": {
+			"three": "https://unpkg.com/three@0.181.0/build/three.module.js"
+		}
+	}
+</script>
+<script type="module" src="script.js"></script>
+</body>
+</html>

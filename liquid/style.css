@@ -1,0 +1,179 @@
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+	--cream:  #eaf6ff;
+	--ink:    #07090d;
+	--redhot: #ff3a16;
+	--cyan:   #2ee6ff;
+}
+
+html, body {
+	height: 100%;
+	background: #05070a;
+	overflow: hidden;
+	font-family: "Space Grotesk", system-ui, sans-serif;
+}
+
+.webgl { display: block; }
+
+.ui {
+	position: fixed;
+	inset: 0;
+	z-index: 5;
+	padding: clamp(22px, 3.4vw, 44px);
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	pointer-events: none;
+	color: #fff;
+	mix-blend-mode: difference;
+}
+.ui-hidden .ui,
+.ui-hidden #panel { display: none; }
+
+#ui-toggle {
+	position: fixed;
+	right: clamp(22px, 3.4vw, 44px);
+	bottom: clamp(22px, 3.4vw, 44px);
+	z-index: 20;
+	padding: 9px 12px;
+	background: rgba(8, 11, 16, 0.72);
+	border: 1px solid rgba(255, 255, 255, 0.35);
+	border-radius: 3px;
+	color: #fff;
+	font-family: "Space Mono", monospace;
+	font-size: 10px;
+	font-weight: 700;
+	letter-spacing: 0.12em;
+	text-transform: uppercase;
+	cursor: pointer;
+}
+#ui-toggle:hover { background: rgba(255, 255, 255, 0.14); }
+.ui-row { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; }
+.lockup { display: flex; flex-direction: column; gap: 14px; }
+
+.mark {
+	font-family: "Space Grotesk", sans-serif;
+	font-weight: 600;
+	font-size: clamp(15px, 1.5vw, 19px);
+	letter-spacing: -0.01em;
+	line-height: 1;
+	display: flex;
+	align-items: baseline;
+	gap: 7px;
+}
+.mark .idx {
+	font-family: "Space Mono", monospace;
+	font-size: 11px;
+	font-weight: 400;
+	letter-spacing: 0.05em;
+	opacity: 0.7;
+}
+
+.meta {
+	font-family: "Space Mono", monospace;
+	font-size: 11px;
+	line-height: 1.7;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	opacity: 0.85;
+}
+.meta span { display: block; }
+
+.desc {
+	font-family: "Space Grotesk", sans-serif;
+	font-size: clamp(12px, 1.15vw, 14px);
+	font-weight: 400;
+	line-height: 1.45;
+	max-width: 30ch;
+	letter-spacing: 0.005em;
+}
+.desc::before {
+	content: "";
+	display: block;
+	width: 26px;
+	height: 1px;
+	background: currentColor;
+	margin-bottom: 12px;
+	opacity: 0.6;
+}
+
+.credit {
+	font-family: "Space Mono", monospace;
+	font-size: 11px;
+	letter-spacing: 0.04em;
+	text-transform: uppercase;
+	text-align: right;
+	white-space: nowrap;
+	opacity: 0.85;
+}
+
+#panel {
+	position: fixed;
+	top: clamp(22px, 3.4vw, 44px);
+	right: clamp(22px, 3.4vw, 44px);
+	z-index: 10;
+	width: 218px;
+	padding: 16px 16px 14px;
+	background: rgba(8, 11, 16, 0.5);
+	border: 1px solid rgba(255, 255, 255, 0.14);
+	border-radius: 3px;
+	color: rgba(255, 255, 255, 0.88);
+	font-family: "Space Mono", monospace;
+	font-size: 11px;
+	letter-spacing: 0.02em;
+	user-select: none;
+	backdrop-filter: blur(12px);
+	-webkit-backdrop-filter: blur(12px);
+	max-height: calc(100vh - 90px);
+	overflow-y: auto;
+}
+#panel h3 {
+	margin: 18px 0 9px;
+	font-weight: 700;
+	font-size: 10px;
+	letter-spacing: 0.16em;
+	text-transform: uppercase;
+	color: rgba(255, 255, 255, 0.5);
+	display: flex;
+	align-items: center;
+	gap: 9px;
+}
+#panel h3::after {
+	content: "";
+	flex: 1;
+	height: 1px;
+	background: rgba(255, 255, 255, 0.13);
+}
+#panel h3:first-child { margin-top: 0; }
+#panel label {
+	display: block;
+	margin: 11px 0 4px;
+	font-size: 10px;
+	letter-spacing: 0.03em;
+	text-transform: uppercase;
+	color: rgba(255, 255, 255, 0.55);
+}
+#panel input[type=range] { width: 100%; accent-color: #fff; }
+#panel .val { float: right; color: rgba(255, 255, 255, 0.95); }
+#panel button {
+	margin-top: 18px;
+	width: 100%;
+	padding: 9px 0;
+	background: transparent;
+	border: 1px solid rgba(255, 255, 255, 0.3);
+	color: #fff;
+	border-radius: 3px;
+	font-family: "Space Mono", monospace;
+	font-weight: 700;
+	font-size: 10px;
+	cursor: pointer;
+	letter-spacing: 0.14em;
+	text-transform: uppercase;
+	transition: background 0.15s, border-color 0.15s;
+}
+#panel button:hover {
+	background: rgba(255, 255, 255, 0.1);
+	border-color: rgba(255, 255, 255, 0.55);
+}
+#panel button:active { background: rgba(255, 255, 255, 0.18); }
