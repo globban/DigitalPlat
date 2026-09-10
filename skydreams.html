@@ -4,6 +4,15 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1, user-scalable=no">
     <title>Skydreams</title>
+    <style>
+        @font-face {
+            font-family: 'PressStart2P';
+            src: url('PressStart2P.ttf') format('truetype');
+        }
+        body {
+            font-family: 'PressStart2P', monospace;
+        }
+    </style>
 </head>
 <body>
 <script>
@@ -34,13 +43,17 @@ a.width = innerWidth;
 a.height = innerHeight;
 
 const deathOverlay = document.createElement('div');
-deathOverlay.style = 'position:fixed;inset:0;display:none;place-items:center;align-content:center;gap:18px;margin:0;color:#fff;font:700 18px/1.2 monospace;text-align:center;pointer-events:none;text-shadow:0 0 8px #fff';
+deathOverlay.style = 'position:fixed;inset:0;display:none;place-items:center;align-content:center;gap:18px;margin:0;color:#fff;font:18px/1.2 PressStart2P,monospace;text-align:center;pointer-events:none;text-shadow:0 0 8px #fff';
 document.body.appendChild(deathOverlay);
+const deathStats = document.createElement('div');
+deathStats.style = 'display:block;max-width:90vw;padding:8px 12px;background:#000;line-height:1.8';
+deathOverlay.appendChild(deathStats);
 const deathBanner = document.createElement('img');
 deathBanner.style = 'display:block;max-width:80vw;max-height:70vh;object-fit:contain';
 deathBanner.alt = 'Game over ASCII art';
 deathOverlay.appendChild(deathBanner);
 const deathPrompt = document.createElement('div');
+deathPrompt.style = 'padding:8px 12px;background:#000';
 deathPrompt.textContent = 'PRESS TO RESTART';
 deathOverlay.appendChild(deathPrompt);
 
@@ -58,6 +71,9 @@ let mouseJustPressed, mouseMode, keyInput;
 
 // game variables
 let x=0, y=0, z=0, vy=0; // ship
+let score = 0;
+let scoreTime = 0;
+let highScore = Number(localStorage.getItem('skydreamsHighScore')) || 0;
 let trackGap = 0;        // track gap
 let mouseDown = 0;       // mouse jump
 let dead = 0;             // death screen state
@@ -200,6 +216,12 @@ let update = () =>
 
         // ramp up speed
         z += Math.min(.5, .2 + z/5e3);
+        scoreTime += 1 / 60;
+        if (scoreTime >= .5)
+        {
+            score++;
+            scoreTime -= .5;
+        }
         if (test) z += .5
 
         // check if close enough to land
@@ -219,6 +241,9 @@ let update = () =>
         if (!dead)
         {
             dead = 1;
+            highScore = Math.max(highScore, score);
+            localStorage.setItem('skydreamsHighScore', highScore);
+            deathStats.textContent = `SCORE ${score}  HIGHSCORE ${highScore}`;
             const bannerNumber = (Math.random()*25|0) + 1;
             deathBanner.src = encodeURI(`banners/ascii-art (${bannerNumber}).png`);
             deathOverlay.style.display = 'grid';
@@ -227,7 +252,7 @@ let update = () =>
         {
             // jump
             // reset game
-            x = y = z = vy = trackGap = 0;
+            x = y = z = vy = trackGap = score = scoreTime = 0;
             trackSx = trackSw = 3;
             trackRows = [];
             dead = 0;
@@ -239,9 +264,12 @@ let update = () =>
         mouseJustPressed = 0;
 
     // hud
+    c.font = `${Math.max(14, a.height/35)}px PressStart2P, monospace`;
+    hsl(0, 0, 99);
+    c.fillText(`SCORE ${score}`, 18, Math.max(32, a.height/16));
     if (test)
     {
-        c.font = 'bold 56px impact';
+        c.font = '56px PressStart2P, monospace';
         for(i=9;i--;)
         {
             hsl(0, 99, i?50:100);
@@ -304,7 +332,7 @@ else
         keyInput[e.key] = 1;
         if (e.key === 'r')
         {
-            x = y = z = vy = trackGap = 0;
+            x = y = z = vy = trackGap = score = scoreTime = 0;
             trackSx = trackSw = 3;
             trackRows = [];
             dead = 0;
