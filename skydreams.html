@@ -38,24 +38,51 @@ Features
 const a = document.createElement('canvas');
 const c = a.getContext("2d");
 document.body.appendChild(a);
-document.body.style='margin:0;overflow:hidden';
+document.body.style='margin:0;overflow:hidden;background:#000';
 a.width = innerWidth;
 a.height = innerHeight;
+const TOP_SCORE_COUNT = 5;
 
 const deathOverlay = document.createElement('div');
-deathOverlay.style = 'position:fixed;inset:0;display:none;place-items:center;align-content:center;gap:18px;margin:0;color:#fff;font:18px/1.2 PressStart2P,monospace;text-align:center;pointer-events:none;text-shadow:0 0 8px #fff';
+deathOverlay.style = 'position:fixed;inset:0;display:grid;place-items:center;align-content:center;gap:14px;margin:0;color:#fff;font:18px/1.2 PressStart2P,monospace;text-align:center;pointer-events:auto;text-shadow:0 0 8px #fff';
 document.body.appendChild(deathOverlay);
 const deathStats = document.createElement('div');
-deathStats.style = 'display:block;max-width:90vw;padding:8px 12px;background:#000;line-height:1.8';
+deathStats.style = 'display:block;max-width:90vw;padding:8px 12px;background:#000;line-height:1.8;white-space:pre-line';
 deathOverlay.appendChild(deathStats);
+const leaderboardTitle = document.createElement('div');
+leaderboardTitle.style = 'padding:8px 12px;background:#000';
+leaderboardTitle.textContent = `TOP ${TOP_SCORE_COUNT}`;
+deathOverlay.appendChild(leaderboardTitle);
+const leaderboardList = document.createElement('div');
+leaderboardList.style = 'min-width:min(90vw,420px);padding:10px 14px;background:#000;text-align:left;white-space:pre;line-height:1.7;font-size:clamp(11px,2.2vw,18px)';
+deathOverlay.appendChild(leaderboardList);
+const namePrompt = document.createElement('div');
+namePrompt.style = 'display:none;padding:8px 12px;background:#000;line-height:1.7';
+deathOverlay.appendChild(namePrompt);
+const namePromptText = document.createElement('div');
+namePromptText.textContent = 'NEW HIGH SCORE - ENTER NAME';
+namePrompt.appendChild(namePromptText);
+const nameInput = document.createElement('input');
+nameInput.maxLength = 10;
+nameInput.placeholder = 'USERNAME';
+nameInput.autocomplete = 'nickname';
+nameInput.style = 'width:min(70vw,240px);padding:8px;border:2px solid #fff;background:#000;color:#fff;font:16px PressStart2P,monospace;text-transform:uppercase';
+namePrompt.appendChild(nameInput);
+const nameButton = document.createElement('button');
+nameButton.textContent = 'SUBMIT';
+nameButton.style = 'margin-left:8px;padding:8px;border:2px solid #fff;background:#fff;color:#000;font:14px PressStart2P,monospace;cursor:pointer';
+namePrompt.appendChild(nameButton);
 const deathBanner = document.createElement('img');
-deathBanner.style = 'display:block;max-width:80vw;max-height:70vh;object-fit:contain';
+deathBanner.style = 'display:none;max-width:80vw;max-height:70vh;object-fit:contain';
 deathBanner.alt = 'Game over ASCII art';
 deathOverlay.appendChild(deathBanner);
 const deathPrompt = document.createElement('div');
 deathPrompt.style = 'padding:8px 12px;background:#000';
-deathPrompt.textContent = 'PRESS TO RESTART';
+deathPrompt.textContent = 'PRESS TO START';
 deathOverlay.appendChild(deathPrompt);
+const initialBannerNumber = (Math.random()*25|0) + 1;
+deathBanner.src = encodeURI(`banners/ascii-art (${initialBannerNumber}).png`);
+deathBanner.style.display = 'block';
 
 ////////////////////////////////////////////////
 
@@ -63,6 +90,11 @@ const ENHANCED = 1;      // keyboard and touch input
 const test = 0;          // test stuff
 const cameraInFront = 3; // camera distance
 const F = .7;            // focal length
+
+// Paste the values from your JSONBin account here.
+const JSONBIN_BIN_ID = '6aa97645ffd5d160530acf74';
+const JSONBIN_ACCESS_KEY = '$2a$10$/ixw5jkkHC.ZGSRfFRuDKui80wjbSFtxiGyA2mgw2L.58/CHwNsVK';
+const JSONBIN_URL = `https://api.jsonbin.io/v3/b/${JSONBIN_BIN_ID}`;
 
 // locals (remove from minified)
 let i, j, r, p, s, px, py;
@@ -74,6 +106,134 @@ let x=0, y=0, z=0, vy=0; // ship
 let score = 0;
 let scoreTime = 0;
 let highScore = Number(localStorage.getItem('skydreamsHighScore')) || 0;
+let leaderboard = [];
+let gameStarted = 0;
+let pendingScore = 0;
+let scoreNeedsName = 0;
+let leaderboardLoading = 0;
+
+const jsonBinReady = () =>
+    JSONBIN_BIN_ID !== 'YOUR_BIN_ID' && JSONBIN_ACCESS_KEY !== 'YOUR_X_MASTER_KEY';
+
+const renderLeaderboard = () =>
+{
+    leaderboardList.textContent = leaderboard.length
+        ? leaderboard.map((entry, index) => `${String(index + 1).padStart(2, ' ')}  ${entry.name.padEnd(10, ' ')} ${String(entry.score).padStart(6, ' ')}`).join('\n')
+        : 'NO SCORES YET';
+};
+
+const loadLeaderboard = async () =>
+{
+    if (!jsonBinReady())
+    {
+        leaderboardList.textContent = 'ADD JSONBIN SETTINGS';
+        return;
+    }
+    try
+    {
+        const response = await fetch(`${JSONBIN_URL}/latest`, {headers:{'X-Master-Key':JSONBIN_ACCESS_KEY}});
+        if (!response.ok) throw Error(`HTTP ${response.status}`);
+        const data = await response.json();
+        leaderboard = (Array.isArray(data.record.scores) ? data.record.scores : [])
+            .filter(entry => entry && typeof entry.name === 'string' && Number.isFinite(Number(entry.score)))
+            .map(entry => ({name: entry.name.slice(0, 10), score: Number(entry.score)}))
+            .sort((left, right) => right.score - left.score)
+            .slice(0, TOP_SCORE_COUNT);
+        renderLeaderboard();
+    }
+    catch (error)
+    {
+        leaderboardList.textContent = 'LEADERBOARD OFFLINE';
+        console.warn('JSONBin leaderboard unavailable:', error);
+    }
+};
+
+const qualifies = score => leaderboard.length < TOP_SCORE_COUNT || score >= leaderboard[leaderboard.length - 1].score;
+
+const submitScore = async () =>
+{
+    if (!scoreNeedsName) return;
+    const name = nameInput.value.trim().slice(0, 10).toUpperCase();
+    if (!name) return;
+    nameButton.disabled = true;
+    try
+    {
+        leaderboard.push({name, score: pendingScore});
+        leaderboard.sort((left, right) => right.score - left.score);
+        leaderboard = leaderboard.slice(0, TOP_SCORE_COUNT);
+        const response = await fetch(JSONBIN_URL, {
+            method: 'PUT',
+            headers: {'Content-Type':'application/json', 'X-Master-Key':JSONBIN_ACCESS_KEY},
+            body: JSON.stringify({scores: leaderboard})
+        });
+        if (!response.ok) throw Error(`HTTP ${response.status}`);
+        scoreNeedsName = 0;
+        namePrompt.style.display = 'none';
+        deathPrompt.textContent = 'PRESS TO RESTART';
+        renderLeaderboard();
+    }
+    catch (error)
+    {
+        leaderboard = leaderboard.filter(entry => entry.name !== name || entry.score !== pendingScore);
+        nameButton.disabled = false;
+        namePromptText.textContent = 'UPLOAD FAILED - TRY AGAIN';
+        console.warn('JSONBin leaderboard update failed:', error);
+    }
+};
+
+nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') submitScore(); });
+nameButton.onclick = submitScore;
+
+const resetGame = () =>
+{
+    x = y = z = vy = trackGap = score = scoreTime = 0;
+    trackSx = trackSw = 3;
+    trackRows = [];
+    dead = 0;
+    gameStarted = 1;
+    scoreNeedsName = 0;
+    leaderboardLoading = 0;
+    nameButton.disabled = false;
+    namePrompt.style.display = 'none';
+    deathBanner.style.display = 'none';
+    deathPrompt.textContent = 'PRESS TO RESTART';
+    deathOverlay.style.display = 'none';
+};
+
+const showDeathScreen = async () =>
+{
+    pendingScore = score;
+    leaderboardLoading = 1;
+    deathStats.textContent = `SCORE ${score}  HIGHSCORE ${highScore}`;
+    const bannerNumber = (Math.random()*25|0) + 1;
+    deathBanner.src = encodeURI(`banners/ascii-art (${bannerNumber}).png`);
+    deathBanner.style.display = 'block';
+    deathPrompt.textContent = 'LOADING LEADERBOARD';
+    deathOverlay.style.display = 'grid';
+    await loadLeaderboard();
+    leaderboardLoading = 0;
+    scoreNeedsName = jsonBinReady() && qualifies(pendingScore);
+    if (scoreNeedsName)
+    {
+        namePromptText.textContent = 'NEW HIGH SCORE - ENTER NAME';
+        namePrompt.style.display = 'block';
+        nameInput.value = '';
+        nameInput.focus();
+        deathPrompt.textContent = 'SUBMIT NAME TO RESTART';
+    }
+    else
+        deathPrompt.textContent = 'PRESS TO RESTART';
+};
+
+deathOverlay.onclick = e =>
+{
+    if (e.target === nameInput || e.target === nameButton) return;
+    if (!gameStarted && !dead) resetGame();
+    else if (dead && !scoreNeedsName) resetGame();
+};
+
+renderLeaderboard();
+loadLeaderboard();
 let trackGap = 0;        // track gap
 let mouseDown = 0;       // mouse jump
 let dead = 0;             // death screen state
@@ -95,6 +255,9 @@ let P = (px, py, dz) =>
 // main loop
 let update = () =>
 {
+    if (!gameStarted)
+        return;
+
     // background
     for(i=500; i--;)
     {
@@ -243,20 +406,12 @@ let update = () =>
             dead = 1;
             highScore = Math.max(highScore, score);
             localStorage.setItem('skydreamsHighScore', highScore);
-            deathStats.textContent = `SCORE ${score}  HIGHSCORE ${highScore}`;
-            const bannerNumber = (Math.random()*25|0) + 1;
-            deathBanner.src = encodeURI(`banners/ascii-art (${bannerNumber}).png`);
-            deathOverlay.style.display = 'grid';
+            showDeathScreen();
         }
         if (mouseJustPressed)
         {
-            // jump
-            // reset game
-            x = y = z = vy = trackGap = score = scoreTime = 0;
-            trackSx = trackSw = 3;
-            trackRows = [];
-            dead = 0;
-            deathOverlay.style.display = 'none';
+            if (!scoreNeedsName && !leaderboardLoading)
+                resetGame();
         }
     }
 
@@ -330,14 +485,10 @@ else
     {
         mouseMode = 0;
         keyInput[e.key] = 1;
+        if (!gameStarted && !dead && ['w', 'a', 's', 'd', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key))
+            resetGame();
         if (e.key === 'r')
-        {
-            x = y = z = vy = trackGap = score = scoreTime = 0;
-            trackSx = trackSw = 3;
-            trackRows = [];
-            dead = 0;
-            deathOverlay.style.display = 'none';
-        }
+            resetGame();
         if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w')
         {
             mouseDown = .1; 
