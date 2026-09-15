@@ -487,8 +487,6 @@ else
         keyInput[e.key] = 1;
         if (!gameStarted && !dead && ['w', 'a', 's', 'd', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight', ' '].includes(e.key))
             resetGame();
-        if (e.key === 'r')
-            resetGame();
         if (e.key === ' ' || e.key === 'ArrowUp' || e.key === 'w')
         {
             mouseDown = .1; 
