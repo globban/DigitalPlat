@@ -51,8 +51,19 @@ deathStats.style = 'display:block;max-width:90vw;padding:8px 12px;background:#00
 deathOverlay.appendChild(deathStats);
 const leaderboardTitle = document.createElement('div');
 leaderboardTitle.style = 'padding:8px 12px;background:#000';
-leaderboardTitle.textContent = `TOP ${TOP_SCORE_COUNT}`;
+leaderboardTitle.textContent = `TODAY'S TOP ${TOP_SCORE_COUNT}`;
 deathOverlay.appendChild(leaderboardTitle);
+const leaderboardModes = document.createElement('div');
+leaderboardModes.style = 'display:flex;gap:8px;justify-content:center;background:#000';
+deathOverlay.appendChild(leaderboardModes);
+const dailyButton = document.createElement('button');
+dailyButton.textContent = 'DAILY';
+const allTimeButton = document.createElement('button');
+allTimeButton.textContent = 'ALL TIME';
+[dailyButton, allTimeButton].forEach(button => {
+    button.style = 'padding:6px 8px;border:1px solid #fff;background:#000;color:#fff;font:11px PressStart2P,monospace;cursor:pointer';
+    leaderboardModes.appendChild(button);
+});
 const leaderboardList = document.createElement('div');
 leaderboardList.style = 'min-width:min(90vw,420px);padding:10px 14px;background:#000;text-align:left;white-space:pre;line-height:1.7;font-size:clamp(11px,2.2vw,18px)';
 deathOverlay.appendChild(leaderboardList);
@@ -107,6 +118,8 @@ let score = 0;
 let scoreTime = 0;
 let highScore = Number(localStorage.getItem('skydreamsHighScore')) || 0;
 let leaderboard = [];
+let displayedLeaderboard = [];
+let leaderboardMode = 'daily';
 let gameStarted = 0;
 let pendingScore = 0;
 let scoreNeedsName = 0;
@@ -115,10 +128,24 @@ let leaderboardLoading = 0;
 const jsonBinReady = () =>
     JSONBIN_BIN_ID !== 'YOUR_BIN_ID' && JSONBIN_ACCESS_KEY !== 'YOUR_X_MASTER_KEY';
 
+const today = () => {
+    const date = new Date();
+    return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+};
+
 const renderLeaderboard = () =>
 {
-    leaderboardList.textContent = leaderboard.length
-        ? leaderboard.map((entry, index) => `${String(index + 1).padStart(2, ' ')}  ${entry.name.padEnd(10, ' ')} ${String(entry.score).padStart(6, ' ')}`).join('\n')
+    const scores = leaderboardMode === 'daily'
+        ? leaderboard.filter(entry => entry.date === today())
+        : leaderboard;
+    displayedLeaderboard = scores.sort((left, right) => right.score - left.score).slice(0, TOP_SCORE_COUNT);
+    leaderboardTitle.textContent = `${leaderboardMode === 'daily' ? "TODAY'S" : 'ALL TIME'} TOP ${TOP_SCORE_COUNT}`;
+    dailyButton.style.background = leaderboardMode === 'daily' ? '#fff' : '#000';
+    dailyButton.style.color = leaderboardMode === 'daily' ? '#000' : '#fff';
+    allTimeButton.style.background = leaderboardMode === 'allTime' ? '#fff' : '#000';
+    allTimeButton.style.color = leaderboardMode === 'allTime' ? '#000' : '#fff';
+    leaderboardList.textContent = displayedLeaderboard.length
+        ? displayedLeaderboard.map((entry, index) => `${String(index + 1).padStart(2, ' ')}  ${entry.name.padEnd(10, ' ')} ${String(entry.score).padStart(6, ' ')}`).join('\n')
         : 'NO SCORES YET';
 };
 
@@ -136,9 +163,8 @@ const loadLeaderboard = async () =>
         const data = await response.json();
         leaderboard = (Array.isArray(data.record.scores) ? data.record.scores : [])
             .filter(entry => entry && typeof entry.name === 'string' && Number.isFinite(Number(entry.score)))
-            .map(entry => ({name: entry.name.slice(0, 10), score: Number(entry.score)}))
+            .map(entry => ({name: entry.name.slice(0, 10), score: Number(entry.score), date: entry.date || ''}))
             .sort((left, right) => right.score - left.score)
-            .slice(0, TOP_SCORE_COUNT);
         renderLeaderboard();
     }
     catch (error)
@@ -148,7 +174,12 @@ const loadLeaderboard = async () =>
     }
 };
 
-const qualifies = score => leaderboard.length < TOP_SCORE_COUNT || score >= leaderboard[leaderboard.length - 1].score;
+const qualifies = score => {
+    const dailyScores = leaderboard.filter(entry => entry.date === today()).sort((left, right) => right.score - left.score);
+    const allTimeScores = leaderboard.slice().sort((left, right) => right.score - left.score);
+    return dailyScores.length < TOP_SCORE_COUNT || score >= dailyScores[TOP_SCORE_COUNT - 1].score
+        || allTimeScores.length < TOP_SCORE_COUNT || score >= allTimeScores[TOP_SCORE_COUNT - 1].score;
+};
 
 const submitScore = async () =>
 {
@@ -158,15 +189,15 @@ const submitScore = async () =>
     nameButton.disabled = true;
     try
     {
-        leaderboard.push({name, score: pendingScore});
+        leaderboard.push({name, score: pendingScore, date: today()});
         leaderboard.sort((left, right) => right.score - left.score);
-        leaderboard = leaderboard.slice(0, TOP_SCORE_COUNT);
         const response = await fetch(JSONBIN_URL, {
             method: 'PUT',
             headers: {'Content-Type':'application/json', 'X-Master-Key':JSONBIN_ACCESS_KEY},
             body: JSON.stringify({scores: leaderboard})
         });
         if (!response.ok) throw Error(`HTTP ${response.status}`);
+        localStorage.setItem('skydreamsUsername', name);
         scoreNeedsName = 0;
         namePrompt.style.display = 'none';
         deathPrompt.textContent = 'PRESS TO RESTART';
@@ -181,8 +212,20 @@ const submitScore = async () =>
     }
 };
 
-nameInput.addEventListener('keydown', e => { if (e.key === 'Enter') submitScore(); });
-nameButton.onclick = submitScore;
+nameInput.addEventListener('keydown', e => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        e.stopPropagation();
+        submitScore();
+    }
+});
+nameButton.onclick = e => {
+    e.preventDefault();
+    e.stopPropagation();
+    submitScore();
+};
+dailyButton.onclick = () => { leaderboardMode = 'daily'; renderLeaderboard(); };
+allTimeButton.onclick = () => { leaderboardMode = 'allTime'; renderLeaderboard(); };
 
 const resetGame = () =>
 {
@@ -217,8 +260,9 @@ const showDeathScreen = async () =>
     {
         namePromptText.textContent = 'NEW HIGH SCORE - ENTER NAME';
         namePrompt.style.display = 'block';
-        nameInput.value = '';
+        nameInput.value = localStorage.getItem('skydreamsUsername') || '';
         nameInput.focus();
+        nameInput.select();
         deathPrompt.textContent = 'SUBMIT NAME TO RESTART';
     }
     else
@@ -227,10 +271,13 @@ const showDeathScreen = async () =>
 
 deathOverlay.onclick = e =>
 {
-    if (e.target === nameInput || e.target === nameButton) return;
+    if (e.target.closest('button, input')) return;
     if (!gameStarted && !dead) resetGame();
     else if (dead && !scoreNeedsName) resetGame();
 };
+deathOverlay.addEventListener('mousedown', e => {
+    if (e.target.closest('button, input')) e.stopPropagation();
+});
 
 renderLeaderboard();
 loadLeaderboard();
